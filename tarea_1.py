@@ -42,11 +42,95 @@ Todos los incisos tienen un valor de 25 puntos sobre la calificación de la tare
 
 
 """
-__author__ = 'escribe_tu_nombre'
+__author__ = 'Pablo Caciano Hernandez'
 
-import entornos
 # Requiere el modulo entornos.py
 # El modulo doscuartos.py puede ser de utilidad para reutilizar código
 # Agrega los modulos que requieras de python
 
+import entornos
+from random import choice
 
+class TresCuartos(entornos.Entorno):
+
+    #Tres cuartos arriba y tres abajo
+
+    def transicion(self, estado, accion):
+        if not self.accion_legal(estado, accion):
+            raise ValueError(" Movimiento invalido ")
+
+        lista= list(estado)
+
+        if accion == 'irDerecha':
+            if lista[-1] == 3*3-1:
+                lista[-1]=0
+            else:
+                lista[-1]+=1
+            return lista
+        elif accion == 'irIzquierda':
+            if lista[-1]==0:
+                lista[-1]=3*3-1
+            else:
+                lista[-1]-=1
+            return lista
+        elif accion == 'irArriba':
+            lista[-1]-=3
+            if lista[-1]<0:
+                lista[-1]+=3*3-1
+            return lista
+        elif accion == 'irAbajo':
+            lista[-1]+=3
+            if lista[-1]>3*3-1:
+                lista[-1]-=3*3-1
+            return lista
+        elif accion == 'limpiar':
+            lista[lista[-1]]= 'limpio'
+            return lista
+
+        else:
+            return lista
+
+    def sensores(self, estado):
+
+        return estado[-1],estado[estado[-1]]
+
+    def accion_legal(self, estado, accion):
+
+        return accion in ('irDerecha', 'irIzquierda', 'irArriba', 'irAbajo', 'limpiar' , 'noOp')
+
+    def desempeno_local(self, estado, accion):
+
+        return 0 if accion == 'noOp' and self.isClean(estado) else -1
+
+    def isClean(self,estado):
+
+        for s in range (0,3*3):
+            if estado[s] == 'sucio':
+                return False
+            return True
+
+class AgenteAleatorio(entornos.Agente):
+    """
+    Un agente que solo regresa una accion al azar entre las acciones legales
+
+    """
+    def __init__(self, acciones):
+        self.acciones = acciones
+
+    def programa(self, percepcion):
+        return choice(self.acciones)
+
+
+def test():
+
+    print "Prueba del entorno Tres cuartos"
+
+    lista=[]
+    for i in range(0,3*3):
+        lista.append('sucio')
+    lista.append(0)
+
+    entornos.simulador(TresCuartos(),AgenteAleatorio(['irDerecha','irIzquierda','irArriba','irAbajo','limpiar','noOp']),lista,100)
+
+if __name__ == '__main__':
+    test()
