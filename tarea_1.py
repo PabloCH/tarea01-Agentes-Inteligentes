@@ -49,6 +49,7 @@ __author__ = 'Pablo Caciano Hernandez'
 # Agrega los modulos que requieras de python
 
 import entornos
+import random
 from random import choice
 
 class TresCuartos(entornos.Entorno):
@@ -109,7 +110,42 @@ class TresCuartos(entornos.Entorno):
                 return False
             return True
 
+class DosCuartos(entornos.Entorno):
+
+    def transicion(self, estado, accion):
+        if not self.accion_legal(estado,accion):
+            raise("Movimiento invalido")
+        robot, A, B = estado
+
+#inciso 4.
+
+        if accion == 'limpiar' and robot == 'A':
+            if random.randint(1, 100)<80: # El 80% de las veces
+                return (robot, A, B) # Regresa el nuevo estado
+            else:  # El 20% restante no hace nada
+                return ('A', 'noOp', B) # Regresa el nuevo estado
+        if accion == 'noOp' and robot == 'B':
+            if random.randint(1, 100)<80:
+                return (robot, A, B) # Regresa el nuevo estado
+            else:
+                return ('B', A, 'noOp') # Regresa el nuevo estado
+
+        return (robot,A,B)
+    def sensores(self, estado):
+        robot, A, B = estado
+        return robot, A if robot == 'A' else B
+
+    def accion_legal(self, estado, accion):
+        return accion in ('irA', 'irB', 'limpiar', 'noOp')
+
+    def desempeno_local(self, estado, accion):
+        robot, A, B = estado
+        return 0 if accion == 'noOp' and A == B == 'limpio' else -1
+
+# fin clase DosCuatos
+
 class AgenteAleatorio(entornos.Agente):
+
     """
     Un agente que solo regresa una accion al azar entre las acciones legales
 
@@ -121,7 +157,61 @@ class AgenteAleatorio(entornos.Agente):
         return choice(self.acciones)
 
 
+class AgenteReactivoDoscuartos(entornos.Agente):
+    """
+    Un agente reactivo simple
+
+    """
+
+    def programa(self, percepcion):
+        robot, situacion = percepcion
+        return ('limpiar' if situacion == 'sucio' else
+                'irA' if robot == 'B' else
+                'irB')
+
+class AgenteReactivoModeloDosCuartos(entornos.Agente):
+    """
+    Un agente reactivo basado en modelo
+
+    """
+    def __init__(self):
+        """
+        Inicializa el modelo interno en el peor de los casos
+
+        """
+        self.modelo = ['A', 'sucio', 'sucio']
+        self.lugar = {'A': 1, 'B': 2}
+
+    def programa(self, percepcion):
+        robot, situacion = percepcion
+
+        # Actualiza el modelo interno
+        self.modelo[0] = robot
+        self.modelo[self.lugar[robot]] = situacion
+
+        # Decide sobre el modelo interno
+        A, B = self.modelo[1], self.modelo[2]
+        return ('noOp' if A == B == 'limpio' else
+                'limpiar' if situacion == 'sucio' else
+                'irA' if robot == 'B' else
+                'irB')
+
 def test():
+
+    print "Prueba del entorno de dos cuartos con un agente aleatorio"
+    entornos.simulador(DosCuartos(),
+                       AgenteAleatorio(['irA', 'irB', 'limpiar', 'noOp']),
+                       ('A', 'sucio', 'sucio'), 100)
+
+    print "Prueba del entorno de dos cuartos con un agente reactivo"
+    entornos.simulador(DosCuartos(),
+                       AgenteReactivoDoscuartos(),
+                       ('A', 'sucio', 'sucio'), 100)
+
+    print "Prueba del entorno de dos cuartos con un agente reactivo"
+    entornos.simulador(DosCuartos(),
+                       AgenteReactivoModeloDosCuartos(),
+                       ('A', 'sucio', 'sucio'), 100)
 
     print "Prueba del entorno Tres cuartos"
 
